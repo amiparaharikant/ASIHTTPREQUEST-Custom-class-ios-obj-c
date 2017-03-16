@@ -1,0 +1,82 @@
+Step 1 : Add Flag
+
+general setting > build phases > Compile Sources. select all ASIHTTP class and add this flag “-fno-objc-arc”
+ 
+——— ——— ——— -————— — ——— —— ——— ——— — ———— ———— ——— ——— ——— ————— — ——— —— ——— ——— — ——
+
+Step 2 : Add .h
+
+#import "ASIHTTPRequest.h"
+#import "ASIFormDataRequest.h"
+#import "ASIHTTPRequestDelegate.h"
+
+<ASIHTTPRequestDelegate>
+
+——— ——— ——— -————— — ——— —— ——— ——— — ———— ———— ——— ——— ——— ————— — ——— —— ——— ——— — ——
+ 
+Step 3 : add into ViewDidLoad
+
+send request:
+
+ ASIFormDataRequest *request = [ASIFormDataRequest requestWithURL:[NSURL URLWithString:@“API URL”]];
+
+// ——— ———— string request ——— ————
+NSString *post = [NSString stringWithFormat:@"api_key=%@&device_id=%@",Api_key,REG_KEY];
+        
+        NSData *jsonData = [post dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+
+			——— ———— OR ——— ————
+
+//——— ————  Dictionary Request ——— ————
+NSDictionary *JsonDict = [NSDictionary dictionaryWithObjectsAndKeys:
+                              [NSString stringWithFormat:@"%@",userid], @"UserId",
+                              [NSString stringWithFormat:@"%@",TXT_Message.text], @"Message",
+                              [NSString stringWithFormat:@"%@",TXT_Subject.text], @"Subject",
+                              nil];
+    
+    NSLog(@"JsonDict : %@",JsonDict);
+    
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:JsonDict options:kNilOptions error:nil];
+
+ [request setRequestMethod:@"POST"];
+        [request addRequestHeader:@"Content-Type" value:@"application/x-www-form-urlencoded"];
+        [request setPostBody:[NSMutableData dataWithData:jsonData]];
+        
+        [request setDelegate:self];
+        [request startAsynchronous];
+
+——— —————— ————— — ——— —— ——— ——— — ———— ———— ——— ——— ——— ————— — ——— —— ——— ——— — ——
+ 
+Step 3 :Get Response
+
+- (void)requestFinished:(ASIHTTPRequest *)request
+{
+    NSLog(@"--Response %d ==> %@", request.responseStatusCode, [request responseString]);
+    
+    NSString *requestReply = [request responseString];
+    NSRange range = [requestReply rangeOfString:@“status”];
+    NSData *data1;
+    NSMutableDictionary *jsonDict;
+    
+    if ((range.location != NSNotFound) && ![requestReply isEqual: @""])
+    {
+        data1 = [requestReply dataUsingEncoding:NSUTF8StringEncoding];
+        jsonDict = [NSJSONSerialization JSONObjectWithData:data1 options:0 error:nil];
+     }
+}
+
+
+- (void)requestStarted:(ASIHTTPRequest *)request
+{
+    NSLog(@"Started");
+}
+
+- (void)requestFailed:(ASIHTTPRequest *)request
+{
+    UIAlertView *alert = [[UIAlertView alloc]initWithTitle:APP_NAME message:AlertMsg delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+    [alert show];
+    [(AppDelegate *)[[UIApplication sharedApplication] delegate] HideHUDSVProgress];
+    
+    NSLog(@"--Response : %d", request.responseStatusCode);
+    NSLog(@"Failed");
+}
